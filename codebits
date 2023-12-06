@@ -1,0 +1,50 @@
+#Some code put together.
+
+!nvidia-smi
+
+import os
+HOME = os.getcwd()
+print(HOME)
+
+
+from ultralytics import YOLO
+
+from IPython.display import display, Image
+
+
+!mkdir {HOME}/datasets
+%cd {HOME}/datasets
+
+!pip install roboflow --quiet
+
+from roboflow import Roboflow
+rf = Roboflow(api_key="DyV6zNTR9N6xCGNv9Kuo")
+project = rf.workspace("is-gtadj").project("kiprobo")
+dataset = project.version(5).download("yolov8")
+
+%cd {HOME}
+
+!yolo task=detect mode=train model=yolov8m.pt data={dataset.location}/data.yaml epochs=300 imgsz=640 plots=True
+
+!ls {HOME}/runs/detect/train/
+
+%cd {HOME}
+Image(filename=f'{HOME}/runs/detect/train/results.png', width=600)
+
+%cd {HOME}
+Image(filename=f'{HOME}/runs/detect/train/val_batch0_pred.jpg', width=600)
+
+%cd {HOME}
+
+!yolo task=detect mode=val model={HOME}/runs/detect/train/weights/best.pt data={dataset.location}/data.yaml
+
+%cd {HOME}
+!yolo task=detect mode=predict model={HOME}/runs/detect/train/weights/best.pt conf=0.25 source={dataset.location}/test/images save=True
+
+import glob
+from IPython.display import Image, display
+
+for image_path in glob.glob(f'{HOME}/runs/detect/predict2/*.jpg')[:10]:
+      display(Image(filename=image_path, width=600))
+      print("\n")
+
